@@ -2,7 +2,7 @@
 from distutils.core import setup, Extension
 import os
 
-os.system("sudo apt-get install python-dev")
+os.system("sudo apt-get install python3-dev")
 os.system("sudo apt-get install libseccomp-dev")
 os.system("gcc src/runner.c -o runner -lseccomp")
 
