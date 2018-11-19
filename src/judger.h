@@ -6,11 +6,12 @@
 #include <sys/stat.h>
 #include "sandbox.h"
 #include "comparator.h"
+#include "status.h"
 
 
 typedef struct Result {
 	int score;
-	char* status;
+	int status;
 	char* compile_info;
 	char* in;
 	char* out;

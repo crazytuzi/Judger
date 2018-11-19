@@ -59,11 +59,11 @@ int get_result(Config *CFG, Result *RES) {
 		char* argv[] = {NULL};
 
 		if (compile(CFG -> spj_language, CFG -> special_judge, file_name, argv) != 0) {
-			strcpy(RES -> status, "System Error");
+			RES -> status=SYSTEM_ERROR;
 			return -1;
 		}
 		if (access(file_name, 0) != 0) {
-			strcpy(RES -> status, "Compile Special Judge Error");
+			RES -> status=COMPILE_SPECIAL_JUDGE_ERROR;
 			return 0;
 		}
 		
@@ -92,7 +92,7 @@ int get_result(Config *CFG, Result *RES) {
 		}
 		
 		if (RRES.judger_error != 0) {
-			strcpy(RES -> status, "Judger Error");
+			RES -> status=JUDGER_ERROR;
 			if (remove(spj_tmp_out) != 0) {
 				REPORTER("Delete special judge out fail");
 				return -1;
@@ -100,7 +100,7 @@ int get_result(Config *CFG, Result *RES) {
 			return 0;
 		} else if ((RRES.return_value | RRES.run_signal) != 0) {
 			REPORTER("Special Judger exit wrongly");
-			strcpy(RES -> status, "Run Special Judge Error");
+			RES -> status=RUN_SPECIAL_JUDGE_ERROR;
 			if (remove(spj_tmp_out) != 0) {
 				REPORTER("Delete special judge out fail");
 				return -1;
@@ -130,11 +130,11 @@ int get_result(Config *CFG, Result *RES) {
 		}
 		RES -> score = score > 100 ? score % 100 : score;
 		if (score == 100) {
-			strcpy(RES -> status, "Accepted");
+			RES -> status=ACCEPTED;
 		} else if (score == 0) {
-			strcpy(RES -> status, "Wrong Answer");
+			RES -> status=WRONG_ANSWER;
 		} else {
-			strcpy(RES -> status, "Partly Correct");
+			RES -> status=PARTLY_CORRECT;
 		}
 		
 		if (spj_res != NULL) free(spj_res);
@@ -147,9 +147,9 @@ int get_result(Config *CFG, Result *RES) {
 		
 		if (! tmp_res) {
 			RES -> score = 100;
-			strcpy(RES -> status, "Accepted");
+			RES -> status=ACCEPTED;
 		} else {
-			strcpy(RES -> status, "Wrong Answer");
+			RES -> status=WRONG_ANSWER;
 		}
 	}
 	return 0;
@@ -157,13 +157,12 @@ int get_result(Config *CFG, Result *RES) {
 
 
 Result run(Config *CFG) {
-	char* status = (char*)malloc(sizeof(char) * 32);
-	strcpy(status, "System Error");
+	int status=SYSTEM_ERROR;
 	Result RES = {0, status, NULL, NULL, NULL, NULL, 0, 0};
 	char file_name[64] = {0};
 
 	if (compile(CFG -> language, CFG -> source_name, file_name, CFG -> compile_option) != 0) {
-		strcpy(status, "Compile Error");
+		status=COMPILE_ERROR;
 		RES.status = status;
 		return RES;
 	}
@@ -172,14 +171,14 @@ Result run(Config *CFG) {
 		return RES;
 	}
 	if (access(file_name, 0) != 0) {
-		strcpy(status, "Compile Error");
+		status=COMPILE_ERROR;
 		RES.status = status;
 		return RES;
 	}
 	
 	struct stat statbuf;
 	if (stat(CFG -> ans_file, &statbuf)) {
-		strcpy(status, "No Answers");
+		status=NO_ANSWERS;
 		RES.status = status;
 		REPORTER("Get answer file size fail");
 		if (remove(file_name)) {
@@ -210,41 +209,41 @@ Result run(Config *CFG) {
 	RES.use_time = RRES.use_time;
 	RES.use_memory = RRES.use_memory;
 	if (RRES.judger_error) {
-		strcpy(status, "Judger Error");
+		status=JUDGER_ERROR;
 	} else if (RRES.run_signal == 0) {
 		if (RRES.return_value == 0) {
-			strcpy(status, "Run Successfully");
+			status=RUN_SUCCESSFULLY;
 		} else {
-			strcpy(status, "Runtime Error");
+			status=RUNTIME_ERROR;
 		}
 		if (RRES.use_time > CFG -> time_limit) {
-			strcpy(status, "Time Limit Exceed");
+			status=TIME_LIMIT_EXCEED;
 		} else if (RRES.use_memory > CFG -> memory_limit * 1024) {
-			strcpy(status, "Memory Limit Exceed");
+			status=MEMORY_LIMIT_EXCEED;
 		}
 	} else if (RRES.run_signal == 31) {
-		strcpy(status, "Dangerous System Call");
+		status=RESTRICTED_FUNCTION;
 	} else if (RRES.run_signal == 9) {
 		if (RRES.use_time > CFG -> time_limit) {
-			strcpy(status, "Time Limit Exceed");
+			status=TIME_LIMIT_EXCEED;
 		} else {
-			strcpy(status, "Runtime Error");
+			status=RUNTIME_ERROR;
 		}
 	} else if (RRES.run_signal == 11) {
 		if (RRES.use_memory > CFG -> memory_limit * 1024) {
-			strcpy(status, "Memory Limit Exceed");
+			status=MEMORY_LIMIT_EXCEED;
 		} else {
-			strcpy(status, "Runtime Error");
+			status=RUNTIME_ERROR;
 		}
 	} else if (RRES.run_signal == 25) {
-		strcpy(status, "Output Limit Exceed");
+		status=OUTPUT_LIMIT_EXCEED;
 	} else {
 		if (RRES.use_time > CFG -> time_limit) {
-			strcpy(status, "Time Limit Exceed");
+			status=TIME_LIMIT_EXCEED;
 		} else if (RRES.use_memory > CFG -> memory_limit * 1024) {
-			strcpy(status, "Memory Limit Exceed");
+			status=MEMORY_LIMIT_EXCEED;
 		} else {
-			strcpy(status, "Runtime Error");
+			status=RUNTIME_ERROR;
 		}
 	}
 	RES.status = status;
@@ -266,7 +265,7 @@ Result run(Config *CFG) {
 		return RES;
 	}
 	
-	if (strcmp(RES.status, "Run Successfully") == 0) {
+	if (RES.status == RUN_SUCCESSFULLY) {
 		if (get_result(CFG, &RES) != 0) {
 			REPORTER("Get Result fail");
 			delete_files(&RES);
@@ -291,6 +290,5 @@ void delete_all(Result *RES) {
 	if (RES -> out != NULL) free(RES -> out);
 	if (RES -> ans != NULL) free(RES -> ans);
 	if (RES -> compile_info != NULL) free(RES -> compile_info);
-	if (RES -> status != NULL) free(RES -> status);
 }
 

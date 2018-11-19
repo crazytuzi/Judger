@@ -84,7 +84,7 @@ int write_result(Result *RES) {
 		REPORTER("Open result fail");
 		return -1;
 	}
-	fprintf(stream, "%s\n%d\n%d\n%d", RES -> status, RES -> score, RES -> use_time, RES -> use_memory);
+	fprintf(stream, "%d\n%d\n%d\n%d", RES -> status, RES -> score, RES -> use_time, RES -> use_memory);
 	
 	stream = fopen("judger.compile", "w");
 	if (stream == NULL) {

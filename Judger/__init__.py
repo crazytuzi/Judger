@@ -35,7 +35,7 @@ def run(CFG):
 	RES = {}
 	res_stream = open(res_file, "r")
 	str_status = res_stream.readline()
-	RES['status'] = re.sub("\n", "", str_status)
+	RES['status'] = int(re.sub("\D", "", str_status))
 	str_score = res_stream.readline()
 	RES['score'] = int(re.sub("\D", "", str_score))
 	str_time = res_stream.readline()
