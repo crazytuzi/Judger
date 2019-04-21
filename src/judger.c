@@ -19,8 +19,10 @@ int compile(const char *lan, char *file_name, char *out_name, char **compile_opt
 		strcpy(compiler, "g++");
 	} else if (strcmp(lan, "C") == 0) {
 		strcpy(compiler, "gcc");
-	} else if (strcmp(lan, "Pascal") == 0) {
-		strcpy(compiler, "fpc");
+	} else if (strcmp(lan, "Python2") == 0) {
+		strcpy(compiler, "python");
+	} else if (strcmp(lan, "Python3") == 0) {
+		strcpy(compiler, "python3");
 	} else {
 		REPORTER("No Langue");
 		return -1;
