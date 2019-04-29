@@ -2,19 +2,20 @@
 
 
 // in case of execve("exe");
+// 生成一个随机文件名
 void generate_name(const char *in_name, char *out_name) {
 	srand((unsigned)time(NULL) + 970830);
 	int len = sizeof(in_name) / sizeof(char);
-	
 	int i;
 	for (i = 0; i < len; i++) out_name[i] = rand() % 26 + 65;
 }
 
-
+// 编译
+// 			CFG -> language, CFG -> source_name, file_name, CFG -> compile_option
 int compile(const char *lan, char *file_name, char *out_name, char **compile_opt) {
 	char compiler[32] = {0};
 	char out_com[32] = {0};
-	
+	// 语言
 	if (strcmp(lan, "C++") == 0) {
 		strcpy(compiler, "g++");
 	} else if (strcmp(lan, "C") == 0) {
@@ -40,8 +41,33 @@ int compile(const char *lan, char *file_name, char *out_name, char **compile_opt
 		while(compile_opt[len - 3] != NULL) argv[len] = compile_opt[len - 3], len += 1;
 		argv[len] = NULL;
 	} else argv[3] = NULL;
-	
+	/*
+	typedef struct LimitList {
+	int time_lim;
+	int memory_lim;
+	int output_lim;
+	} LimitList;
+	typedef struct RunConfig {
+	int is_compilation;
+	int use_sandbox;
+	int is_limited;
+	char* run_program;
+	char* in_file;
+	char* out_file;
+	char** argv;
+	LimitList lims;
+	} RunConfig;
+	*/
 	RunConfig RRCF = {1, 0, 1, compiler, "", "compile.out", argv, {10000, 128, 512 * 1024 * 1024}};
+	/*
+	typedef struct RunResult {
+	int use_time;
+	int use_memory;
+	int run_signal;
+	int return_value;
+	int judger_error;
+	} RunResult;
+	*/
 	RunResult RRES = {0, 0, 0, 0, 1};
 	
 	if (runner(&RRCF, &RRES) != 0) {
@@ -157,9 +183,22 @@ int get_result(Config *CFG, Result *RES) {
 	return 0;
 } 
 
-
+// 运行入口
 Result run(Config *CFG) {
+	// 默认为 SYSTEM_ERRO
 	int status=SYSTEM_ERROR;
+	/*
+	typedef struct Result {
+	int score;
+	int status;
+	char* compile_info;
+	char* in;
+	char* out;
+	char* ans;
+	int use_time;
+	int use_memory;
+	 Result;
+	*/
 	Result RES = {0, status, NULL, NULL, NULL, NULL, 0, 0};
 	char file_name[64] = {0};
 

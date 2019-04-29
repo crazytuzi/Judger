@@ -55,6 +55,7 @@ int runner(const RunConfig*, RunResult*);
 
 
 int load_syscal_list(const RunConfig *RCFG) {
+	// Linux系统调用
 	Sandbox sbx = {{16,
 			SCMP_SYS(close), SCMP_SYS(read),
 			SCMP_SYS(write), SCMP_SYS(tgkill),
@@ -107,13 +108,14 @@ int load_syscal_list(const RunConfig *RCFG) {
 	return 0;
 }
 
-	
+// 时间和空间限制
 int load_limit(const RunConfig *RCFG) {
 	struct rlimit rtmp;
 	
 	rtmp.rlim_max = TIMETOP;
 	rtmp.rlim_cur = (unsigned long int)(RCFG -> lims.time_lim * 1.3 / 1000) + 1 < rtmp.rlim_max ?
 					(unsigned long int)(RCFG -> lims.time_lim * 1.3 / 1000) + 1 : rtmp.rlim_max;
+	// 最大允许的CPU使用时间
 	if (setrlimit(RLIMIT_CPU, &rtmp) != 0) {
 		REPORTER("Load cpu time limit fail.");
 		return -1;
@@ -123,6 +125,7 @@ int load_limit(const RunConfig *RCFG) {
 	rtmp.rlim_max = MEMTOP;
 	rtmp.rlim_cur = (unsigned long int)2 * RCFG -> lims.memory_lim * 1024 * 1024 < rtmp.rlim_max ?
 					(unsigned long int)2 * RCFG -> lims.memory_lim * 1024 * 1024 : rtmp.rlim_max;
+	// 进程的最大虚内存空间
 	if (setrlimit(RLIMIT_AS, &rtmp) != 0) {
 		REPORTER("Load memory limit fail.");
 		return -1;
@@ -131,6 +134,7 @@ int load_limit(const RunConfig *RCFG) {
 	rtmp.rlim_max = 512 * 1024 * 1024;
 	rtmp.rlim_cur = (unsigned long int)2 * RCFG -> lims.output_lim < rtmp.rlim_max ? 
 					(unsigned long int)2 * RCFG -> lims.output_lim : rtmp.rlim_max;
+	// 进程可建立的文件的最大长度
 	if (setrlimit(RLIMIT_FSIZE, &rtmp) != 0) {
 		REPORTER("Load output size limit fail.");
 		return -1;
@@ -139,6 +143,7 @@ int load_limit(const RunConfig *RCFG) {
 	rtmp.rlim_max = MEMTOP;
 	rtmp.rlim_cur = (unsigned long int)2 * RCFG -> lims.memory_lim * 1024 * 1024 < rtmp.rlim_max ?
 					(unsigned long int)2 * RCFG -> lims.memory_lim * 1024 * 1024 : rtmp.rlim_max;
+	// 最大的进程堆栈
 	if (setrlimit(RLIMIT_STACK, &rtmp) != 0) {
 		REPORTER("Load stack size limit fail.");
 		return -1;
@@ -151,7 +156,12 @@ int load_limit(const RunConfig *RCFG) {
 int runner(const RunConfig *RCFG, RunResult *RES) {
 	struct rusage Ruse;
 	int status_val;
-	
+	/*
+	forfk调用的一个奇妙之处就是它仅仅被调用一次，却能够返回两次，它可能有三种不同的返回值:
+	1）在父进程中，fork返回新创建子进程的进程ID； >0
+    2）在子进程中，fork返回0；==0
+    3）如果出现错误，fork返回一个负值； <0
+	*/
 	pid_t s_pid = fork();
 	
 	if (s_pid < 0) {
@@ -159,6 +169,7 @@ int runner(const RunConfig *RCFG, RunResult *RES) {
 		return -1;
 		
 	} else if (s_pid == 0) {
+		
 		if ((RCFG -> is_compilation == 0) && (freopen(RCFG -> in_file, "r", stdin) == NULL)) {
 			REPORTER("Freopen in fail.");
 			return -1;
@@ -177,13 +188,15 @@ int runner(const RunConfig *RCFG, RunResult *RES) {
 		if (RCFG -> is_limited != 0) if (load_limit(RCFG) != 0) return -1;
 		if (RCFG -> use_sandbox != 0) if (load_syscal_list(RCFG) != 0) return -1;
 		
+		
+		
 		if (RCFG -> is_compilation != 0) execvp(RCFG -> run_program, RCFG -> argv);
 		else execve(RCFG -> run_program, RCFG -> argv, NULL);
-		
 		REPORTER("Execve or execvp fail");
 		exit(0);
 		
-	} else {		
+	} else {
+
 		pid_t surveillant = fork();
 		
 		if (surveillant < 0) {
@@ -193,10 +206,12 @@ int runner(const RunConfig *RCFG, RunResult *RES) {
 		} else if (surveillant == 0) {
 			int time_lim = (RCFG -> lims.time_lim * 1.3 / 1000) + 1 < TIMETOP ? 
 							(RCFG -> lims.time_lim * 1.3 / 1000) + 1 : TIMETOP;
+			// 睡眠，到时杀死子进程
 			sleep(time_lim);
 			kill(s_pid, SIGKILL);
 			exit(0);
 		} else {
+			// 暂停子进程，获取子进程的信息
 			if (wait4(s_pid, &status_val, 0, &Ruse) == -1) {
 				REPORTER("Wait child fail.");
 				return -1;
@@ -204,12 +219,15 @@ int runner(const RunConfig *RCFG, RunResult *RES) {
 			
 			int sstatus;
 			kill(surveillant, SIGKILL);
+			// 暂时停止目前进程的执行，直到有信号来到或子进程结束
 			if (waitpid(surveillant, &sstatus, 0) == -1) {
 				REPORTER("Wait surveillant fail.");
 				return -1;
 			}
-			
+			// WIFSIGNALED(status)为非0 表明进程异常终止
+			// WTERMSIG(status) 取得子进程因信号而中止的信号
 			if (WIFSIGNALED(status_val) != 0) RES -> run_signal = WTERMSIG(status_val);
+			// WEXITSTATUS(status)取得子进程exit()返回的结束代码
 			RES -> return_value = WEXITSTATUS(status_val);
 			RES -> judger_error = 0;
 			RES -> use_time += (int)(Ruse.ru_utime.tv_sec * 1000);
