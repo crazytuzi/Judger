@@ -129,6 +129,7 @@ int main(void) {
 		free_cfg(&CFG);
 		return 0;
 	}
+	printf("pid=%d\n",getpid());
 	// 运行
 	RES = run(&CFG);
 	//把结果写入文件

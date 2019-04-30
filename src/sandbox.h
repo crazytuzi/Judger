@@ -169,7 +169,6 @@ int runner(const RunConfig *RCFG, RunResult *RES) {
 		return -1;
 		
 	} else if (s_pid == 0) {
-		
 		if ((RCFG -> is_compilation == 0) && (freopen(RCFG -> in_file, "r", stdin) == NULL)) {
 			REPORTER("Freopen in fail.");
 			return -1;
@@ -188,10 +187,16 @@ int runner(const RunConfig *RCFG, RunResult *RES) {
 		if (RCFG -> is_limited != 0) if (load_limit(RCFG) != 0) return -1;
 		if (RCFG -> use_sandbox != 0) if (load_syscal_list(RCFG) != 0) return -1;
 		
-		
-		
 		if (RCFG -> is_compilation != 0) execvp(RCFG -> run_program, RCFG -> argv);
-		else execve(RCFG -> run_program, RCFG -> argv, NULL);
+		else {
+			if (RCFG -> argv == NULL)
+			{
+				execve(RCFG -> run_program, RCFG -> argv, NULL);
+			}else{
+				char *argv[]={RCFG -> argv[0], RCFG -> run_program, NULL};
+				execve(argv[0],argv,NULL);
+			}
+		}
 		REPORTER("Execve or execvp fail");
 		exit(0);
 		

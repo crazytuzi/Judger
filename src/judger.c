@@ -201,22 +201,34 @@ Result run(Config *CFG) {
 	*/
 	Result RES = {0, status, NULL, NULL, NULL, NULL, 0, 0};
 	char file_name[64] = {0};
-
-	if (compile(CFG -> language, CFG -> source_name, file_name, CFG -> compile_option) != 0) {
+	char **argv = NULL;
+	if (strcmp(CFG -> language,"C") == 0 || strcmp(CFG -> language,"C++") == 0)
+	{
+		if (compile(CFG -> language, CFG -> source_name, file_name, CFG -> compile_option) != 0) {
 		status=COMPILE_ERROR;
 		RES.status = status;
 		return RES;
+		}
+		if ((RES.compile_info = READFILE("compile.out", 256)) == NULL) {
+			REPORTER("Read compile result fail");
+			return RES;
+		}
+		if (access(file_name, 0) != 0) {
+			status=COMPILE_ERROR;
+			RES.status = status;
+			return RES;
+		}
+	}else{
+		strcpy(file_name,CFG -> source_name);
+		argv = (char **)malloc(sizeof(char*) * 10);
+		if (strcmp(CFG -> language,"Python2") == 0)
+		{
+			strcpy(argv[0],"/usr/bin/python");
+		}else if (strcmp(CFG -> language,"Python3") == 0)
+		{
+			strcpy(argv[0],"/usr/bin/python3");
+		}
 	}
-	if ((RES.compile_info = READFILE("compile.out", 256)) == NULL) {
-		REPORTER("Read compile result fail");
-		return RES;
-	}
-	if (access(file_name, 0) != 0) {
-		status=COMPILE_ERROR;
-		RES.status = status;
-		return RES;
-	}
-	
 	struct stat statbuf;
 	if (stat(CFG -> ans_file, &statbuf)) {
 		status=NO_ANSWERS;
@@ -231,8 +243,11 @@ Result run(Config *CFG) {
 	int size = statbuf.st_size;
 	
 	RunResult RRES = {0, 0, 0, 0, SIGABRT};
-	RunConfig RCFG = {0, 1, 1, file_name, CFG -> in_file, CFG -> out_file, NULL, 
+	RunConfig RCFG = {0, 1, 1, file_name, CFG -> in_file, CFG -> out_file, argv, 
 					{CFG -> time_limit, CFG -> memory_limit, size}};
+	if (strcmp(CFG -> language,"C") != 0 && strcmp(CFG -> language,"C++") != 0){
+		RCFG.use_sandbox = 0;
+	}
 
 	if (runner(&RCFG, &RRES) != 0) {
 		REPORTER("Run progream fail");
@@ -242,11 +257,12 @@ Result run(Config *CFG) {
 		}
 		return RES;
 	}
-	if (remove(file_name) != 0) {
+	if (strcmp(CFG -> language,"C") == 0 || strcmp(CFG -> language,"C++") == 0){
+		if (remove(file_name) != 0) {
 		REPORTER("Delete program fail");
 		return RES;
+		}
 	}
-	
 	RES.use_time = RRES.use_time;
 	RES.use_memory = RRES.use_memory;
 	if (RRES.judger_error) {
