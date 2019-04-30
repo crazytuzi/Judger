@@ -18,29 +18,37 @@ int compile(const char *lan, char *file_name, char *out_name, char **compile_opt
 	// 语言
 	if (strcmp(lan, "C++") == 0) {
 		strcpy(compiler, "g++");
+		generate_name(file_name, out_name);
+		sprintf(out_com, "-o%s", out_name);
 	} else if (strcmp(lan, "C") == 0) {
 		strcpy(compiler, "gcc");
-	} else if (strcmp(lan, "Python2") == 0) {
-		strcpy(compiler, "python");
-	} else if (strcmp(lan, "Python3") == 0) {
-		strcpy(compiler, "python3");
+		generate_name(file_name, out_name);
+		sprintf(out_com, "-o%s", out_name);
+	} else if (strcmp(lan, "Java") == 0) {
+		strcpy(compiler, "/usr/bin/javac");
+		strncpy(out_name,file_name,strlen(file_name)-5);
+		out_name[strlen(file_name)-5]='\0';
 	} else {
 		REPORTER("No Langue");
 		return -1;
 	}
 	
-	generate_name(file_name, out_name);
-	sprintf(out_com, "-o%s", out_name);
-	
 	char **argv = (char **)malloc(sizeof(char*) * 10);
-	argv[0] = compiler;
-	argv[1] = file_name;
-	argv[2] = out_com;
-	if (compile_opt != NULL) {
-		int len = 3;
-		while(compile_opt[len - 3] != NULL) argv[len] = compile_opt[len - 3], len += 1;
-		argv[len] = NULL;
-	} else argv[3] = NULL;
+	if (strcmp(lan, "C++") == 0 || strcmp(lan, "C") == 0){
+		argv[0] = compiler;
+		argv[1] = file_name;
+		argv[2] = out_com;
+		if (compile_opt != NULL) {
+			int len = 3;
+			while(compile_opt[len - 3] != NULL) argv[len] = compile_opt[len - 3], len += 1;
+			argv[len] = NULL;
+		} else argv[3] = NULL;
+	} else
+	{
+		argv[0] = compiler;
+		argv[1] = file_name;
+		argv[2] = NULL;
+	}
 	/*
 	typedef struct LimitList {
 	int time_lim;
@@ -202,12 +210,13 @@ Result run(Config *CFG) {
 	Result RES = {0, status, NULL, NULL, NULL, NULL, 0, 0};
 	char file_name[64] = {0};
 	char **argv = NULL;
-	if (strcmp(CFG -> language,"C") == 0 || strcmp(CFG -> language,"C++") == 0)
+	if (strcmp(CFG -> language,"C") == 0 || strcmp(CFG -> language,"C++") == 0 ||
+		strcmp(CFG -> language,"Java") == 0)
 	{
 		if (compile(CFG -> language, CFG -> source_name, file_name, CFG -> compile_option) != 0) {
-		status=COMPILE_ERROR;
-		RES.status = status;
-		return RES;
+			status=COMPILE_ERROR;
+			RES.status = status;
+			return RES;
 		}
 		if ((RES.compile_info = READFILE("compile.out", 256)) == NULL) {
 			REPORTER("Read compile result fail");
@@ -217,6 +226,11 @@ Result run(Config *CFG) {
 			status=COMPILE_ERROR;
 			RES.status = status;
 			return RES;
+		}
+		if (strcmp(CFG -> language,"Java") == 0)
+		{
+			argv = (char **)malloc(sizeof(char*) * 10);
+			strcpy(argv[0],"java");
 		}
 	}else{
 		strcpy(file_name,CFG -> source_name);
