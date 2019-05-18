@@ -6,7 +6,6 @@ def run(CFG):
 	# 默认的配置文件
 	cfg_file = 'judger.cfg'
 	res_file = 'judger.res'
-	compile_out = 'judger.compile'
 	in_file = 'judger.in'
 	out_file = 'judger.out'
 	ans_file = 'judger.ans'
@@ -19,10 +18,6 @@ def run(CFG):
 	cfg_stream.write(str(CFG['ans_file']) + '\n')
 	cfg_stream.write(str(CFG['time_limit']) + '\n')
 	cfg_stream.write(str(CFG['memory_limit']) + '\n')
-	cfg_stream.write(str(len(CFG['compile option'])) + '\n')
-	# 编译参数
-	for options in CFG['compile option']:
-		cfg_stream.write(str(options) + '\n')
 	# special_judge 暂时不考虑
 	if 'special_judge' in CFG:
 		cfg_stream.write(str(CFG['special_judge']) + '\n')
@@ -47,10 +42,6 @@ def run(CFG):
 	str_memory = res_stream.readline()
 	RES['use_memory'] = int(re.sub("\D", "", str_memory))
 	res_stream.close()
-	# 取编译结果 暂时不考虑
-	compile_stream = open(compile_out, "r")
-	RES['compile_info'] = compile_stream.read()
-	compile_stream.close()
 	
 	in_stream = open(in_file, "r")
 	RES['in'] = in_stream.read()
@@ -66,7 +57,6 @@ def run(CFG):
 
 	os.remove(cfg_file)
 	os.remove(res_file)
-	os.remove(compile_out)
 	os.remove(in_file)
 	os.remove(out_file)
 	os.remove(ans_file)

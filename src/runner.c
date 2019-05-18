@@ -34,15 +34,6 @@ int read_config(Config *CFG) {
 	
 	fscanf(stream, "%d%d%d", &CFG -> time_limit, &CFG -> memory_limit, &cp_nums);
 	
-	CFG -> compile_option = (char **)malloc(sizeof(char*) * (cp_nums + 1));
-	int i;
-	for (i = 0; i < cp_nums; i++) {
-		char tmp[200];
-		fscanf(stream, "%s", tmp);
-		CFG -> compile_option[i] = (char *)malloc((strlen(tmp) + 1)* sizeof(char));
-		strcpy(CFG -> compile_option[i], tmp);
-	}
-	CFG -> compile_option[cp_nums] = NULL;
 	// spj 暂时不用
 	if (fscanf(stream, "%s", tmp) != EOF) {
 		CFG -> special_judge = (char *)malloc((strlen(tmp) + 1) * sizeof(char));
@@ -68,13 +59,6 @@ void free_cfg(Config *CFG) {
 	if (CFG -> in_file != NULL) free(CFG -> in_file);
 	if (CFG -> out_file != NULL) free(CFG -> out_file);
 	if (CFG -> ans_file != NULL) free(CFG -> ans_file);
-	if (CFG -> compile_option != NULL) {
-		int i;
-		for (i = 0; CFG -> compile_option[i] != NULL; i++) {
-			free(CFG -> compile_option[i]);
-		}
-		free(CFG -> compile_option);
-	}
 }
 // 将结果写入文件
 int write_result(Result *RES) {
@@ -85,13 +69,6 @@ int write_result(Result *RES) {
 		return -1;
 	}
 	fprintf(stream, "%d\n%d\n%d\n%d", RES -> status, RES -> score, RES -> use_time, RES -> use_memory);
-	
-	stream = fopen("judger.compile", "w");
-	if (stream == NULL) {
-		REPORTER("Open compile information fail");
-		return -1;
-	}
-	fprintf(stream, "%s\n", RES -> compile_info);
 	
 	stream = fopen("judger.in", "w");
 	if (stream == NULL) {

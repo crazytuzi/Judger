@@ -1,124 +1,24 @@
 #include "judger.h"
 
-
-// in case of execve("exe");
-// 生成一个随机文件名
-void generate_name(const char *in_name, char *out_name) {
-	srand((unsigned)time(NULL) + 970830);
-	int len = sizeof(in_name) / sizeof(char);
-	int i;
-	for (i = 0; i < len; i++) out_name[i] = rand() % 26 + 65;
-}
-
-// 编译
-// 			CFG -> language, CFG -> source_name, file_name, CFG -> compile_option
-int compile(const char *lan, char *file_name, char *out_name, char **compile_opt) {
-	char compiler[32] = {0};
-	char out_com[32] = {0};
-	// 语言
-	if (strcmp(lan, "C++") == 0) {
-		strcpy(compiler, "g++");
-		generate_name(file_name, out_name);
-		sprintf(out_com, "-o%s", out_name);
-	} else if (strcmp(lan, "C") == 0) {
-		strcpy(compiler, "gcc");
-		generate_name(file_name, out_name);
-		sprintf(out_com, "-o%s", out_name);
-	} else if (strcmp(lan, "Java") == 0) {
-		strcpy(compiler, "/usr/bin/javac");
-		strncpy(out_name,file_name,strlen(file_name)-5);
-		out_name[strlen(file_name)-5]='\0';
-	} else {
-		REPORTER("No Langue");
-		return -1;
-	}
-	
-	char **argv = (char **)malloc(sizeof(char*) * 10);
-	if (strcmp(lan, "C++") == 0 || strcmp(lan, "C") == 0){
-		argv[0] = compiler;
-		argv[1] = file_name;
-		argv[2] = out_com;
-		if (compile_opt != NULL) {
-			int len = 3;
-			while(compile_opt[len - 3] != NULL) argv[len] = compile_opt[len - 3], len += 1;
-			argv[len] = NULL;
-		} else argv[3] = NULL;
-	} else
-	{
-		argv[0] = compiler;
-		argv[1] = file_name;
-		argv[2] = NULL;
-	}
-	/*
-	typedef struct LimitList {
-	int time_lim;
-	int memory_lim;
-	int output_lim;
-	} LimitList;
-	typedef struct RunConfig {
-	int is_compilation;
-	int use_sandbox;
-	int is_limited;
-	char* run_program;
-	char* in_file;
-	char* out_file;
-	char** argv;
-	LimitList lims;
-	} RunConfig;
-	*/
-	RunConfig RRCF = {1, 0, 1, compiler, "", "compile.out", argv, {10000, 128, 512 * 1024 * 1024}};
-	/*
-	typedef struct RunResult {
-	int use_time;
-	int use_memory;
-	int run_signal;
-	int return_value;
-	int judger_error;
-	} RunResult;
-	*/
-	RunResult RRES = {0, 0, 0, 0, 1};
-	
-	if (runner(&RRCF, &RRES) != 0) {
-		REPORTER("Compile fail.");
-		if (argv != NULL) free(argv);
-		return -1;
-	}
-
-	if (argv != NULL) free(argv);
-	return 0;
-}
-
-
 int get_result(Config *CFG, Result *RES) {
 	if (CFG -> special_judge != NULL) {
-		char file_name[64] = {0};
 		char* argv[] = {NULL};
-
-		if (compile(CFG -> spj_language, CFG -> special_judge, file_name, argv) != 0) {
-			RES -> status=SYSTEM_ERROR;
-			return -1;
-		}
-		if (access(file_name, 0) != 0) {
-			RES -> status=COMPILE_SPECIAL_JUDGE_ERROR;
-			return 0;
-		}
-		
 		char* spjargv[] = {RES -> in, RES -> out, RES -> ans, NULL};
 		char spj_tmp_out[] = "spj_tmp.out";
 		char* spj_res;
 		RunResult RRES = {0, 0, 0, 0, 1};
-		RunConfig RCFG = {0, 1, 1, file_name, CFG -> in_file, spj_tmp_out, spjargv, 
+		RunConfig RCFG = {1, 1, CFG ->source_name, CFG -> in_file, spj_tmp_out, spjargv,
 					{10, 512, 16 * 1024 * 1024}};
 
 		if (runner(&RCFG, &RRES) != 0) {
 			REPORTER("Run progream fail");
-			if (remove(file_name)) {
+			if (remove(CFG->source_name)) {
 				REPORTER("Delete program fail");
 				return -1;
 			}
 			return -1;
 		}
-		if (remove(file_name) != 0) {
+		if (remove(CFG->source_name) != 0) {
 			REPORTER("Delete program fail");
 			if (remove(spj_tmp_out) != 0) {
 				REPORTER("Delete special judge out fail");
@@ -199,7 +99,6 @@ Result run(Config *CFG) {
 	typedef struct Result {
 	int score;
 	int status;
-	char* compile_info;
 	char* in;
 	char* out;
 	char* ans;
@@ -207,40 +106,19 @@ Result run(Config *CFG) {
 	int use_memory;
 	 Result;
 	*/
-	Result RES = {0, status, NULL, NULL, NULL, NULL, 0, 0};
-	char file_name[64] = {0};
+	Result RES = {0, status, NULL, NULL, NULL, 0, 0};
 	char **argv = NULL;
-	if (strcmp(CFG -> language,"C") == 0 || strcmp(CFG -> language,"C++") == 0 ||
-		strcmp(CFG -> language,"Java") == 0)
-	{
-		if (compile(CFG -> language, CFG -> source_name, file_name, CFG -> compile_option) != 0) {
-			status=COMPILE_ERROR;
-			RES.status = status;
-			return RES;
-		}
-		if ((RES.compile_info = READFILE("compile.out", 256)) == NULL) {
-			REPORTER("Read compile result fail");
-			return RES;
-		}
-		if (access(file_name, 0) != 0) {
-			status=COMPILE_ERROR;
-			RES.status = status;
-			return RES;
-		}
-		if (strcmp(CFG -> language,"Java") == 0)
-		{
-			argv = (char **)malloc(sizeof(char*) * 10);
-			strcpy(argv[0],"java");
-		}
-	}else{
-		strcpy(file_name,CFG -> source_name);
+	if (strcmp(CFG->language, "Java") == 0 || strcmp(CFG->language, "Python2") == 0
+		|| strcmp(CFG->language, "Python3") == 0) {
 		argv = (char **)malloc(sizeof(char*) * 10);
-		if (strcmp(CFG -> language,"Python2") == 0)
+		if (strcmp(CFG->language, "Java") == 0){
+			strcpy(argv[0], "java");
+		} else if (strcmp(CFG->language, "Python2") == 0)
 		{
-			strcpy(argv[0],"/usr/bin/python");
-		}else if (strcmp(CFG -> language,"Python3") == 0)
+			strcpy(argv[0], "python2");
+		} else if (strcmp(CFG->language, "Python2") == 0)
 		{
-			strcpy(argv[0],"/usr/bin/python3");
+			strcpy(argv[0], "python3");
 		}
 	}
 	struct stat statbuf;
@@ -257,7 +135,7 @@ Result run(Config *CFG) {
 	int size = statbuf.st_size;
 	
 	RunResult RRES = {0, 0, 0, 0, SIGABRT};
-	RunConfig RCFG = {0, 1, 1, file_name, CFG -> in_file, CFG -> out_file, argv, 
+	RunConfig RCFG = {1, 1, CFG ->source_name, CFG -> in_file, CFG -> out_file, argv, 
 					{CFG -> time_limit, CFG -> memory_limit, size}};
 	if (strcmp(CFG -> language,"C") != 0 && strcmp(CFG -> language,"C++") != 0){
 		RCFG.use_sandbox = 0;
@@ -271,11 +149,9 @@ Result run(Config *CFG) {
 		}
 		return RES;
 	}
-	if (strcmp(CFG -> language,"C") == 0 || strcmp(CFG -> language,"C++") == 0){
-		if (remove(file_name) != 0) {
+	if (remove(file_name) != 0) {
 		REPORTER("Delete program fail");
 		return RES;
-		}
 	}
 	RES.use_time = RRES.use_time;
 	RES.use_memory = RRES.use_memory;
@@ -352,7 +228,6 @@ void delete_files(Result *RES) {
 	if (RES -> in != NULL) free(RES -> in);
 	if (RES -> out != NULL) free(RES -> out);
 	if (RES -> ans != NULL) free(RES -> ans);
-	if (RES -> compile_info != NULL) free(RES -> compile_info);
 }
 
 
@@ -360,6 +235,5 @@ void delete_all(Result *RES) {
 	if (RES -> in != NULL) free(RES -> in);
 	if (RES -> out != NULL) free(RES -> out);
 	if (RES -> ans != NULL) free(RES -> ans);
-	if (RES -> compile_info != NULL) free(RES -> compile_info);
 }
 

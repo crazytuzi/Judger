@@ -12,7 +12,6 @@
 typedef struct Result {
 	int score;
 	int status;
-	char* compile_info;
 	char* in;
 	char* out;
 	char* ans;
@@ -29,16 +28,9 @@ typedef struct Config {
 	char* ans_file;
 	int time_limit;
 	int memory_limit;
-	char** compile_option;
 	char* special_judge;
 	char* spj_language;
 } Config;
-
-
-
-void generate_name(const char*, char*);
-
-int compile(const char*, char*, char*, char**);
 
 int get_result(Config *, Result*);
 
