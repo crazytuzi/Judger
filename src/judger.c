@@ -126,7 +126,7 @@ Result run(Config *CFG) {
 		status=NO_ANSWERS;
 		RES.status = status;
 		REPORTER("Get answer file size fail");
-		if (remove(file_name)) {
+		if (remove(CFG->source_name)) {
 			REPORTER("Delete program fail");
 			return RES;
 		}
@@ -143,13 +143,13 @@ Result run(Config *CFG) {
 
 	if (runner(&RCFG, &RRES) != 0) {
 		REPORTER("Run progream fail");
-		if (remove(file_name) != 0) {
+		if (remove(CFG->source_name) != 0) {
 			REPORTER("Delete program fail");
 			return RES;
 		}
 		return RES;
 	}
-	if (remove(file_name) != 0) {
+	if (remove(CFG->source_name) != 0) {
 		REPORTER("Delete program fail");
 		return RES;
 	}
