@@ -112,13 +112,13 @@ Result run(Config *CFG) {
 		|| strcmp(CFG->language, "Python3") == 0) {
 		argv = (char **)malloc(sizeof(char*) * 10);
 		if (strcmp(CFG->language, "Java") == 0){
-			strcpy(argv[0], "java");
+			strcpy(argv[0], "/usr/bin/java");
 		} else if (strcmp(CFG->language, "Python2") == 0)
 		{
-			strcpy(argv[0], "python2");
+			strcpy(argv[0], "/usr/bin/python2");
 		} else if (strcmp(CFG->language, "Python2") == 0)
 		{
-			strcpy(argv[0], "python3");
+			strcpy(argv[0], "/usr/bin/python3");
 		}
 	}
 	struct stat statbuf;
