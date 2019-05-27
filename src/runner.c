@@ -55,7 +55,7 @@ int read_config(Config *CFG) {
 // 释放
 void free_cfg(Config *CFG) {
 	if (CFG -> language != NULL) free(CFG -> language);
-	if (CFG -> source_name != NULL) free(CFG -> source_name);
+	// if (CFG -> source_name != NULL) free(CFG -> source_name);
 	if (CFG -> in_file != NULL) free(CFG -> in_file);
 	if (CFG -> out_file != NULL) free(CFG -> out_file);
 	if (CFG -> ans_file != NULL) free(CFG -> ans_file);

@@ -126,14 +126,13 @@ Result run(Config *CFG) {
 		status=NO_ANSWERS;
 		RES.status = status;
 		REPORTER("Get answer file size fail");
-		if (remove(CFG->source_name)) {
-			REPORTER("Delete program fail");
-			return RES;
-		}
+		// if (remove(CFG->source_name)) {
+		// 	REPORTER("Delete program fail");
+		// 	return RES;
+		// }
 		return RES;
 	}
 	int size = statbuf.st_size;
-	
 	RunResult RRES = {0, 0, 0, 0, SIGABRT};
 	RunConfig RCFG = {1, 1, CFG ->source_name, CFG -> in_file, CFG -> out_file, argv, 
 					{CFG -> time_limit, CFG -> memory_limit, size}};
@@ -143,16 +142,16 @@ Result run(Config *CFG) {
 
 	if (runner(&RCFG, &RRES) != 0) {
 		REPORTER("Run progream fail");
-		if (remove(CFG->source_name) != 0) {
-			REPORTER("Delete program fail");
-			return RES;
-		}
+		// if (remove(CFG->source_name) != 0) {
+		// 	REPORTER("Delete program fail");
+		// 	return RES;
+		// }
 		return RES;
 	}
-	if (remove(CFG->source_name) != 0) {
-		REPORTER("Delete program fail");
-		return RES;
-	}
+	// if (remove(CFG->source_name) != 0) {
+	// 	REPORTER("Delete program fail");
+	// 	return RES;
+	// }
 	RES.use_time = RRES.use_time;
 	RES.use_memory = RRES.use_memory;
 	if (RRES.judger_error) {
