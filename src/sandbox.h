@@ -121,9 +121,7 @@ int load_limit(const RunConfig *RCFG) {
 	}
 	
 	// need 32-bit system solotion
-	rtmp.rlim_max = MEMTOP;
-	rtmp.rlim_cur = (unsigned long int)2 * RCFG -> lims.memory_lim * 1024 * 1024 < rtmp.rlim_max ?
-					(unsigned long int)2 * RCFG -> lims.memory_lim * 1024 * 1024 : rtmp.rlim_max;
+	rtmp.rlim_max = rtmp.rlim_cur = MEMTOP * 2;
 	// 进程的最大虚内存空间
 	if (setrlimit(RLIMIT_AS, &rtmp) != 0) {
 		REPORTER("Load memory limit fail.");
@@ -184,8 +182,14 @@ int runner(const RunConfig *RCFG, RunResult *RES) {
 		{
 			execve(RCFG -> run_program, RCFG -> argv, NULL);
 		}else{
-			char *argv[]={RCFG -> argv[0], RCFG -> run_program, NULL};
-			execve(argv[0], argv, NULL);
+			if (strcmp(RCFG -> argv[0],"/usr/bin/java")==0){
+				char *argv[]={RCFG -> argv[0], "-classpath",RCFG -> run_program,"Main",NULL};
+				execve(argv[0], argv, NULL);
+			}
+			else{
+				char *argv[]={RCFG -> argv[0], RCFG -> run_program, NULL};
+				execve(argv[0], argv, NULL);
+			}
 		}
 		REPORTER("Execve or execvp fail");
 		exit(0);
