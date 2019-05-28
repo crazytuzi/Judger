@@ -115,7 +115,7 @@ Result run(Config *CFG) {
 			strcpy(argv[0], "/usr/bin/java");
 		} else if (strcmp(CFG->language, "Python2") == 0)
 		{
-			strcpy(argv[0], "/usr/bin/python2");
+			strcpy(argv[0], "/usr/bin/python");
 		} else if (strcmp(CFG->language, "Python3") == 0)
 		{
 			strcpy(argv[0], "/usr/bin/python3");
