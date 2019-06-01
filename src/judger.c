@@ -121,7 +121,9 @@ Result run(Config *CFG) {
 			strcpy(argv[0], "/usr/bin/python3");
 		}
 	}
+	// 描述linux系统文件系统中的文件属性
 	struct stat statbuf;
+	// 执行成功则返回0，失败返回-1
 	if (stat(CFG -> ans_file, &statbuf)) {
 		status=NO_ANSWERS;
 		RES.status = status;
@@ -132,7 +134,9 @@ Result run(Config *CFG) {
 		// }
 		return RES;
 	}
+	// 文件字节数
 	int size = statbuf.st_size;
+	// SIGABRT 异常终止条件
 	RunResult RRES = {0, 0, 0, 0, SIGABRT};
 	RunConfig RCFG = {1, 1, CFG ->source_name, CFG -> in_file, CFG -> out_file, argv, 
 					{CFG -> time_limit, CFG -> memory_limit, size}};

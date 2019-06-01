@@ -65,6 +65,7 @@ int load_syscal_list(const RunConfig *RCFG) {
 			SCMP_SYS(exit_group), SCMP_SYS(writev)
 		}};
 	scmp_filter_ctx ctx;
+	// 默认不允许所有的syscall
 	ctx = seccomp_init(SCMP_ACT_KILL);
 	
 	if (! ctx) {
@@ -109,8 +110,14 @@ int load_syscal_list(const RunConfig *RCFG) {
 
 // 时间和空间限制
 int load_limit(const RunConfig *RCFG) {
+	// 进程资源的限制
 	struct rlimit rtmp;
-	
+	/*
+	struct rlimit {
+		rlim rlim_cur; // 软限制：当前限制
+		rlim rlim_max; // 硬限制：rlimcur的最大值
+	}；
+	*/
 	rtmp.rlim_max = TIMETOP;
 	rtmp.rlim_cur = (unsigned long int)(RCFG -> lims.time_lim * 1.3 / 1000) + 1 < rtmp.rlim_max ?
 					(unsigned long int)(RCFG -> lims.time_lim * 1.3 / 1000) + 1 : rtmp.rlim_max;
@@ -151,10 +158,11 @@ int load_limit(const RunConfig *RCFG) {
 
 
 int runner(const RunConfig *RCFG, RunResult *RES) {
+	// 描述进程内存的使用情况
 	struct rusage Ruse;
 	int status_val;
 	/*
-	forfk调用的一个奇妙之处就是它仅仅被调用一次，却能够返回两次，它可能有三种不同的返回值:
+	fork调用的一个奇妙之处就是它仅仅被调用一次，却能够返回两次，它可能有三种不同的返回值:
 	1）在父进程中，fork返回新创建子进程的进程ID； >0
     2）在子进程中，fork返回0；==0
     3）如果出现错误，fork返回一个负值； <0
@@ -165,6 +173,7 @@ int runner(const RunConfig *RCFG, RunResult *RES) {
 		return -1;
 		
 	} else if (s_pid == 0) {
+		// 重定向输入输出流
 		if (freopen(RCFG -> in_file, "r", stdin) == NULL) {
 			REPORTER("Freopen in fail.");
 			return -1;

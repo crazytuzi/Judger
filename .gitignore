@@ -1,5 +1,6 @@
 *.log
 *.exe
 .vs/
+.idea/
 .vscode/
 build/
